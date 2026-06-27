@@ -107,7 +107,7 @@
     }
 
     /*--------------------------------------------------
-      @ Sidebar (navi element from main.css)
+      @ Sidebar
     --------------------------------------------------*/
     navi {
       display: block;
@@ -123,7 +123,6 @@
       padding-bottom: 40px;
       z-index: 10;
       color: var(--f_low) !important;
-      /* Přidáno plynulé scrollování pro samotnou lištu */
       scroll-behavior: smooth;
     }
 
@@ -203,9 +202,17 @@
       font-size: 11px;
       opacity: 0.6;
     }
-
     navi ul.active li.active.subheader::before {
       content: "•";
+    }
+
+    navi li.subsubheader {
+      padding-left: 30px;
+      font-size: 10px;
+      opacity: 0.5;
+    }
+    navi ul.active li.active.subsubheader::before {
+      content: "▪";
     }
 
     navi li.comment {
@@ -462,6 +469,7 @@
   <script>
     'use strict';
 
+    // Změněno z index.md na Home.md
     const docs = ['Home.md', 'TapModule.md', 'Waypoints.md'];
 
     const themes = [
@@ -484,9 +492,34 @@
     
     let isAutoScrolling = false;
 
+    // Helper pro generování URL-friendly slugů (např. "Můj Nadpis 1" -> "muj-nadpis-1")
+    function createSlug(txt) {
+      return txt.toLowerCase().replace(/[\*_`~#\-]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
     function cleanText(txt) {
       if (!txt) return '';
       return txt.replace(/[\*_`~#\-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    // --------------------------------------------------
+    // @ URL Hash Updater
+    // --------------------------------------------------
+    function updateUrlHash(docIdx, markerIdx) {
+      if (docIdx < 0 || docIdx >= docs.length) return;
+      const docName = docs[docIdx].replace('.md', '');
+      let hash = `#${docName}`;
+      
+      if (markerIdx !== -1 && activePageMarkers.length > 0) {
+        const marker = activePageMarkers.find(m => m.id === markerIdx);
+        if (marker) {
+          hash += `/${createSlug(marker.text)}`;
+        }
+      }
+      
+      if (window.location.hash !== hash) {
+        history.replaceState(null, null, hash);
+      }
     }
 
     // --------------------------------------------------
@@ -594,9 +627,11 @@
 
       for (let idx = 0; idx < lines.length; idx++) {
         const line = lines[idx].trim();
-        if (line.substring(0, 2) === '##') {
+        if (line.startsWith('###')) {
+          list.push({ id: list.length, text: line.replace('###', '').trim(), line: idx, type: 'subsubheader' });
+        } else if (line.startsWith('##')) {
           list.push({ id: list.length, text: line.replace('##', '').trim(), line: idx, type: 'subheader' });
-        } else if (line.substring(0, 1) === '#') {
+        } else if (line.startsWith('#')) {
           list.push({ id: list.length, text: line.replace('#', '').trim(), line: idx, type: 'header' });
         }
       }
@@ -606,15 +641,21 @@
     // --------------------------------------------------
     // @ Document Loading & Rendering
     // --------------------------------------------------
-    async function loadDocument(index) {
+    async function loadDocument(index, targetSlug = null) {
       currentDocIndex = index;
       const fileName = docs[index];
       const view = document.getElementById('content-view');
       view.innerHTML = '<em style="color: var(--f_med);">fetching document..</em>';
       
       try {
-        const response = await fetch(`./docs/${fileName}`);
-        if (!response.ok) throw new Error(`file "${fileName}" not found.`);
+        // Přidání časového razítka obchází cache a předchází vrácení staré výchozí stránky (např. Github Wiki default)
+        const response = await fetch(`./docs/${fileName}?t=${Date.now()}`);
+        if (!response.ok) throw new Error(`soubor "${fileName}" nebyl nalezen.`);
+        
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("text/html")) {
+          throw new Error(`Cesta k souboru "${fileName}" je chybná (server vrátil HTML namísto Markdownu). Zkontrolujte nastavení webserveru.`);
+        }
         
         const markdown = await response.text();
         rawTextCache = markdown;
@@ -624,7 +665,20 @@
         view.innerHTML = marked.parse(markdown);
         renderSidebar();
         
-        document.getElementById('content').scrollTop = 0;
+        // Pokud byl zadán targetSlug, najdi odpovídající marker a odskroluj, jinak jdi na začátek
+        if (targetSlug) {
+          const targetMarker = activePageMarkers.find(m => createSlug(m.text) === targetSlug || createSlug(m.text) === createSlug(targetSlug));
+          if (targetMarker) {
+            setTimeout(() => jumpToMarker(targetMarker.id), 50); // Mírný delay pro bezpečný render
+          } else {
+            document.getElementById('content').scrollTop = 0;
+            updateUrlHash(currentDocIndex, -1);
+          }
+        } else {
+          document.getElementById('content').scrollTop = 0;
+          updateUrlHash(currentDocIndex, -1);
+        }
+
         updateStats();
 
       } catch (err) {
@@ -659,22 +713,16 @@
       }
       navi.innerHTML = html;
 
-      // Spustí posun lišty po překreslení sidebar elementů
       scrollSidebarToActive();
     }
 
-    // NOVÁ FUNKCE: Automaticky vycentruje aktivní položku v liště (baru)
     function scrollSidebarToActive() {
       if (currentActiveMarkerIndex === -1) return;
       const activeEl = document.getElementById(`marker-item-${currentActiveMarkerIndex}`);
       const navi = document.getElementById('sidebar');
       
       if (activeEl && navi) {
-        // Vypočítá pozici tak, aby položka byla uprostřed výšky sidebaru
-        const activeRect = activeEl.getBoundingClientRect();
-        const naviRect = navi.getBoundingClientRect();
         const relativeTop = activeEl.offsetTop - navi.offsetTop;
-        
         navi.scrollTop = relativeTop - (navi.offsetHeight / 2) + (activeEl.offsetHeight / 2);
       }
     }
@@ -696,6 +744,7 @@
         isAutoScrolling = true;
         currentActiveMarkerIndex = markerId;
         renderSidebar();
+        updateUrlHash(currentDocIndex, currentActiveMarkerIndex);
 
         const containerRect = container.getBoundingClientRect();
         const headingRect = heading.getBoundingClientRect();
@@ -728,6 +777,7 @@
         if (currentActiveMarkerIndex !== lastIdx) {
           currentActiveMarkerIndex = lastIdx;
           renderSidebar();
+          updateUrlHash(currentDocIndex, currentActiveMarkerIndex);
         }
         updateStats();
         return;
@@ -740,7 +790,6 @@
         const rect = headings[i].getBoundingClientRect();
         const relativeTop = rect.top - containerRect.top;
 
-        // Vylepšená citlivost posunu
         if (relativeTop <= 50) {
           currentHeading = headings[i];
         } else {
@@ -759,7 +808,8 @@
 
       if (nextActiveMarkerIdx !== currentActiveMarkerIndex) {
         currentActiveMarkerIndex = nextActiveMarkerIdx;
-        renderSidebar(); // renderSidebar uvnitř sebe samo zavolá scrollSidebarToActive()
+        renderSidebar();
+        updateUrlHash(currentDocIndex, currentActiveMarkerIndex);
       }
 
       updateStats();
@@ -818,8 +868,73 @@
 
       loadTheme(currentThemeIndex);
       updateFontVariables();
-      loadDocument(0);
       
+      // Detekce počátečního URL Hashe (#Home/neco)
+      const rawHash = window.location.hash.substring(1);
+      let initialDocIdx = 0;
+      let initialTargetSlug = null;
+      
+      if (rawHash) {
+        const hashParts = rawHash.split('/');
+        const docPart = hashParts[0];
+        
+        const foundIdx = docs.findIndex(d => d.replace('.md', '') === docPart);
+        if (foundIdx !== -1) {
+          initialDocIdx = foundIdx;
+        }
+        
+        if (hashParts.length > 1) {
+          initialTargetSlug = hashParts.slice(1).join('/');
+        }
+      }
+
+      loadDocument(initialDocIdx, initialTargetSlug);
+      
+      // Intercept clicks on markdown links
+      document.getElementById('content-view').addEventListener('click', (e) => {
+        const a = e.target.closest('a');
+        if (!a) return;
+
+        const href = a.getAttribute('href');
+        if (!href) return;
+
+        // Ignore absolute URLs (external links)
+        if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
+          return;
+        }
+
+        e.preventDefault();
+
+        const parts = href.split('#');
+        let filePart = parts[0];
+        let hashPart = parts.slice(1).join('#');
+
+        let targetDoc = currentDocIndex;
+
+        if (filePart) {
+          const docIdx = docs.findIndex(d => d === filePart || d === filePart + '.md');
+          if (docIdx !== -1) {
+            targetDoc = docIdx;
+          } else {
+            window.location.href = href;
+            return;
+          }
+        }
+
+        if (targetDoc !== currentDocIndex) {
+          loadDocument(targetDoc, hashPart ? decodeURIComponent(hashPart) : null);
+        } else if (hashPart) {
+          let decodedHash = decodeURIComponent(hashPart);
+          let targetMarker = activePageMarkers.find(m => createSlug(m.text) === decodedHash || createSlug(m.text) === createSlug(decodedHash));
+          if (targetMarker) {
+            jumpToMarker(targetMarker.id);
+          }
+        } else {
+          document.getElementById('content').scrollTop = 0;
+          updateUrlHash(currentDocIndex, -1);
+        }
+      });
+
       document.getElementById('content').addEventListener('scroll', syncSidebarWithScroll);
       startClock();
     };
