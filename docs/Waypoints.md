@@ -184,3 +184,4 @@ The server automatically logs:
 
 ## Support
 For issues and questions, you can contact moderators on Discord: https://discord.com/invite/UH7HQpWrGf
+
