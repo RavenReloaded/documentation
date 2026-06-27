@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Left // Documentation</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /*--------------------------------------------------
+      @ Reset (matching reset.css)
+    --------------------------------------------------*/
+    * {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      text-decoration: none;
+      font-weight: inherit;
+      font-style: inherit;
+      color: inherit;
+      font-size: 100%;
+      font-family: inherit;
+      vertical-align: baseline;
+      list-style: none;
+      border-collapse: collapse;
+      border-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      box-sizing: border-box;
+    }
+    *:focus {
+      outline: none;
+    }
+    ::selection {
+      background: var(--b_low) !important;
+      color: var(--f_high) !important;
+    }
+
+    /*--------------------------------------------------
+      @ Fonts (matching fonts.css pointing to /fonts)
+    --------------------------------------------------*/
+    @font-face {
+      font-family: 'custom_mono';
+      src: url('fonts/mono.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'custom_serif';
+      src: url('fonts/serif.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'custom_sans_serif';
+      src: url('fonts/sans_serif.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /*--------------------------------------------------
+      @ Base Variables & Body
+    --------------------------------------------------*/
+    :root {
+      --font-size: 13px;
+      --line-height: 21px;
+      --font-family: 'custom_mono';
+      
+      --background: #222222;
+      --f_high: #ffffff;
+      --f_med: #aaaaaa;
+      --f_low: #555555;
+      --f_inv: #000000;
+      --b_high: #f9a8d4;
+      --b_med: #a7f3d0;
+      --b_low: #000000;
+      --b_inv: #a3e635;
+    }
+
+    body {
+      height: 100vh;
+      font-family: var(--font-family);
+      font-size: var(--font-size);
+      background: var(--background);
+      color: var(--f_high) !important;
+      overflow: hidden;
+      transition: background-color 500ms, filter 150ms;
+    }
+
+    ::-webkit-scrollbar {
+      display: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    drag {
+      display: block;
+      width: 100vw;
+      height: 30px;
+      position: fixed;
+      top: 0px;
+      background-color: transparent !important;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /*--------------------------------------------------
+      @ Sidebar (navi element from main.css)
+    --------------------------------------------------*/
+    navi {
+      display: block;
+      width: calc((100vw / 4) - 40px);
+      left: 0px;
+      position: absolute;
+      padding: 30px 0px 0px 30px;
+      overflow-y: auto;
+      padding-top: 30px;
+      transition: opacity 200ms 200ms, transform 150ms, width 200ms;
+      opacity: 1;
+      height: calc(100vh - 80px);
+      padding-bottom: 40px;
+      z-index: 10;
+      color: var(--f_low) !important;
+      /* Přidáno plynulé scrollování pro samotnou lištu */
+      scroll-behavior: smooth;
+    }
+
+    navi ul {
+      margin-bottom: 15px;
+    }
+
+    navi li {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      line-height: 20px;
+      cursor: pointer;
+      position: relative;
+      height: 20px;
+      color: var(--f_low) !important;
+      font-size: 12px;
+      transition: color 150ms, opacity 150ms;
+    }
+
+    navi li span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    navi li::before {
+      position: absolute;
+      left: -15px;
+      color: var(--f_low) !important;
+    }
+
+    navi li:hover {
+      color: var(--f_high) !important;
+      opacity: 1 !important;
+    }
+
+    navi li:hover::before {
+      color: var(--f_high) !important;
+    }
+
+    navi li.page {
+      font-weight: bold;
+    }
+
+    navi ul.active li {
+      color: var(--f_med) !important;
+    }
+    navi ul.active li.page {
+      color: var(--f_high) !important;
+    }
+    navi ul.active li.page::before {
+      content: "/";
+    }
+    navi ul.active li.active {
+      color: var(--f_high) !important;
+      opacity: 1 !important;
+    }
+
+    navi li.marker {
+      display: none;
+    }
+    navi ul.active li.marker {
+      display: block;
+    }
+
+    navi li.header {
+      padding-left: 10px;
+    }
+    navi ul.active li.active.header::before {
+      content: "•";
+    }
+
+    navi li.subheader {
+      padding-left: 20px;
+      font-size: 11px;
+      opacity: 0.6;
+    }
+
+    navi ul.active li.active.subheader::before {
+      content: "•";
+    }
+
+    navi li.comment {
+      display: none !important;
+    }
+
+    /*--------------------------------------------------
+      @ Main Content Container
+    --------------------------------------------------*/
+    #content {
+      font-family: var(--font-family);
+      padding: 30px 15px 80px;
+      height: calc(100vh - 50px);
+      display: block;
+      width: 80ch;
+      position: fixed;
+      left: 25vw;
+      font-size: var(--font-size);
+      line-height: var(--line-height);
+      background: transparent;
+      overflow-y: auto;
+      max-width: 70%;
+      transition: left 200ms, width 200ms, max-width 200ms;
+      margin-left: -15px;
+      color: var(--f_high) !important;
+    }
+
+    #content-view {
+      max-width: 600px;
+      width: 100%;
+    }
+
+    /*--------------------------------------------------
+      @ Retro Minimalist Markdown Prose Styling
+    --------------------------------------------------*/
+    #content-view h1, 
+    #content-view h2, 
+    #content-view h3, 
+    #content-view h4 {
+      font-family: var(--font-family);
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-top: 1.8em;
+      margin-bottom: 0.6em;
+      letter-spacing: 0.5px;
+      color: var(--f_high);
+    }
+
+    #content-view h1 {
+      font-size: 1.35em;
+      border-bottom: 1px solid var(--f_low);
+      padding-bottom: 0.3em;
+    }
+
+    #content-view h2 { font-size: 1.15em; }
+    #content-view h3 { font-size: 1.0em; color: var(--f_med); }
+
+    #content-view p {
+      margin-bottom: 1.1em;
+      text-align: justify;
+      line-height: var(--line-height);
+    }
+
+    #content-view a {
+      color: var(--b_med);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: background-color 150ms, color 150ms;
+    }
+
+    #content-view a:hover {
+      background: var(--b_med);
+      color: var(--background);
+      text-decoration: none;
+    }
+
+    #content-view pre {
+      background: var(--b_low);
+      padding: 14px;
+      border: 1px solid var(--f_low);
+      overflow-x: auto;
+      margin: 1.6em 0;
+    }
+
+    #content-view code {
+      font-family: 'custom_mono', monospace;
+      font-size: 0.9em;
+      color: var(--b_high);
+    }
+
+    #content-view pre code {
+      color: var(--f_high);
+      background: transparent;
+      font-size: 0.85em;
+    }
+
+    #content-view blockquote {
+      border-left: 2px solid var(--b_high);
+      margin: 1.6em 0;
+      padding-left: 15px;
+      color: var(--f_med);
+    }
+
+    #content-view ul {
+      list-style-type: square;
+      padding-left: 1.5em;
+      margin-bottom: 1.1em;
+    }
+
+    #content-view li { margin-bottom: 0.4em; }
+
+    #content-view table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.8em 0;
+    }
+
+    #content-view th, 
+    #content-view td {
+      padding: 8px 10px;
+      border: 1px solid var(--f_low);
+      text-align: left;
+    }
+
+    #content-view th {
+      background-color: var(--b_low);
+      color: var(--b_high);
+    }
+
+    /*--------------------------------------------------
+      @ Bottom Stats Bar
+    --------------------------------------------------*/
+    stats {
+      display: block;
+      border-top: 0px;
+      margin-top: 30px;
+      position: fixed;
+      bottom: 0px;
+      left: 25vw;
+      line-height: 15px;
+      width: calc(75vw - 40px);
+      height: 40px;
+      padding-top: 12px;
+      overflow: hidden;
+      user-select: none;
+      transition: left 200ms, width 200ms;
+      color: var(--f_low) !important;
+      font-size: 11px;
+      z-index: 100;
+    }
+
+    stats b {
+      color: var(--f_high) !important;
+      font-weight: bold;
+    }
+
+    stats i {
+      color: var(--f_med) !important;
+      text-decoration: underline;
+    }
+
+    stats .right { float: right; }
+
+    stats span.progress {
+      margin-right: 15px;
+      letter-spacing: 1px;
+    }
+
+    /*--------------------------------------------------
+      @ Mobile Layout
+    --------------------------------------------------*/
+    body.mobile navi {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-20px);
+    }
+
+    body.mobile #content {
+      width: 100vw;
+      left: 5%;
+      max-width: 90%;
+    }
+
+    body.mobile stats {
+      width: 90%;
+      left: 5%;
+    }
+
+    /*--------------------------------------------------
+      @ Theme Toggle Switch
+    --------------------------------------------------*/
+    #theme_button {
+      width: 40px;
+      height: 40px;
+      position: fixed;
+      right: 0px;
+      bottom: 0px;
+      overflow: hidden;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 500ms;
+      z-index: 1000;
+    }
+
+    #theme_button_icon {
+      border: 1px solid var(--f_med) !important;
+      width: 10px;
+      height: 10px;
+      position: absolute;
+      left: 14.5px;
+      top: 14.5px;
+      border-radius: 30px;
+      overflow: hidden;
+    }
+
+    #theme_button_icon_fg {
+      max-width: 20px;
+      width: 20px;
+      height: 6.5px;
+      background-color: var(--f_med) !important;
+      position: relative;
+      left: -2px;
+      top: -2px;
+      transition: top 250ms;
+    }
+
+    #theme_button.active #theme_button_icon_fg { top: 5.5px; }
+    body:hover #theme_button { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <drag></drag>
+  <navi id="sidebar"></navi>
+
+  <main id="content">
+    <article id="content-view">
+      <em style="color: var(--f_med);">fetching document..</em>
+    </article>
+  </main>
+
+  <stats id="stats">
+    <span class="progress" id="scroll-bar">| | | | | | | | | |</span>
+    <span id="stats-data">0L 0W 0V 0C 0.00%</span>
+    <span class="right" id="clock">00:00</span>
+  </stats>
+
+  <div id="theme_button" onclick="cycleTheme(event)">
+    <div id="theme_button_icon">
+      <div id="theme_button_icon_fg"></div>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    const docs = ['Home.md', 'TapModule.md', 'Waypoints.md'];
+
+    const themes = [
+      { name: 'left_classic', background: '#222222', f_high: '#ffffff', f_med: '#aaaaaa', f_low: '#555555', f_inv: '#000000', b_high: '#f9a8d4', b_med: '#a7f3d0', b_low: '#000000', b_inv: '#a3e635' },
+      { name: 'taru', background: '#0d0d0c', f_high: '#fcfcfa', f_med: '#8e8e88', f_low: '#4c4c47', f_inv: '#0d0d0c', b_high: '#72dec2', b_med: '#ffd447', b_low: '#1b1b1a', b_inv: '#fcfcfa' },
+      { name: 'nord', background: '#2e3440', f_high: '#eceff4', f_med: '#d8dee9', f_low: '#4c566a', f_inv: '#2e3440', b_high: '#88c0d0', b_med: '#8fbcbb', b_low: '#1e222a', b_inv: '#bf616a' },
+      { name: 'gruvbox', background: '#282828', f_high: '#ebdbb2', f_med: '#bdae93', f_low: '#665c54', f_inv: '#282828', b_high: '#fe8019', b_med: '#fabd2f', b_low: '#1d2021', b_inv: '#fb4934' },
+      { name: 'ample', background: '#f4f4f2', f_high: '#1a1a19', f_med: '#6e6e6a', f_low: '#b2b2ad', f_inv: '#f4f4f2', b_high: '#e63946', b_med: '#457b9d', b_low: '#ffffff', b_inv: '#1a1a19' }
+    ];
+
+    const fonts = ['custom_mono', 'custom_serif', 'custom_sans_serif'];
+
+    let currentDocIndex = 0;
+    let currentThemeIndex = 0;
+    let currentFontIndex = 0;
+    let currentFontSize = 13;
+    let activePageMarkers = [];
+    let currentActiveMarkerIndex = -1;
+    let rawTextCache = '';
+    
+    let isAutoScrolling = false;
+
+    function cleanText(txt) {
+      if (!txt) return '';
+      return txt.replace(/[\*_`~#\-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    // --------------------------------------------------
+    // @ Theme Manager
+    // --------------------------------------------------
+    function loadTheme(index) {
+      const theme = themes[index];
+      const root = document.documentElement;
+      
+      root.style.setProperty('--background', theme.background);
+      root.style.setProperty('--f_high', theme.f_high);
+      root.style.setProperty('--f_med', theme.f_med);
+      root.style.setProperty('--f_low', theme.f_low);
+      root.style.setProperty('--f_inv', theme.f_inv);
+      root.style.setProperty('--b_high', theme.b_high);
+      root.style.setProperty('--b_med', theme.b_med);
+      root.style.setProperty('--b_low', theme.b_low);
+      root.style.setProperty('--b_inv', theme.b_inv);
+
+      currentThemeIndex = index;
+      localStorage.setItem('left_theme_idx', index);
+
+      const toggler = document.getElementById('theme_button');
+      if (index % 2 === 0) {
+        toggler.classList.add('active');
+      } else {
+        toggler.classList.remove('active');
+      }
+    }
+
+    function cycleTheme(e) {
+      if (e) e.stopPropagation();
+      const nextIdx = (currentThemeIndex + 1) % themes.length;
+      loadTheme(nextIdx);
+    }
+
+    // --------------------------------------------------
+    // @ Font Manager
+    // --------------------------------------------------
+    function updateFontVariables() {
+      const root = document.documentElement;
+      root.style.setProperty('--font-size', `${currentFontSize}px`);
+      root.style.setProperty('--line-height', `${currentFontSize + 8}px`);
+      root.style.setProperty('--font-family', fonts[currentFontIndex]);
+      
+      localStorage.setItem('left_font_idx', currentFontIndex);
+      localStorage.setItem('left_font_size', currentFontSize);
+    }
+
+    function cycleFont(forward = true) {
+      currentFontIndex = forward ? (currentFontIndex + 1) % fonts.length : (currentFontIndex - 1 + fonts.length) % fonts.length;
+      updateFontVariables();
+      updateStats();
+    }
+
+    function changeFontSize(amount) {
+      currentFontSize = Math.max(9, Math.min(32, currentFontSize + amount));
+      updateFontVariables();
+      updateStats();
+    }
+
+    function resetFontSize() {
+      currentFontSize = 13;
+      updateFontVariables();
+      updateStats();
+    }
+
+    // --------------------------------------------------
+    // @ Statistics Calculator
+    // --------------------------------------------------
+    function calculateMetrics(text) {
+      const trimmed = text.trim();
+      if (!trimmed) return { l: 0, w: 0, v: 0, c: 0 };
+
+      const lines = text.split('\n').length;
+      const chars = text.length;
+      const wordsArray = text.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').split(/\s+/).filter(w => w.trim().length > 0);
+
+      return { l: lines, w: wordsArray.length, v: new Set(wordsArray).size, c: chars };
+    }
+
+    function updateStats() {
+      const metrics = calculateMetrics(rawTextCache);
+      const container = document.getElementById('content');
+      
+      const scrollDistance = container.scrollTop;
+      const scrollMax = container.scrollHeight - container.offsetHeight;
+      const ratio = Math.min(1, (scrollMax <= 0) ? 0 : (scrollDistance / scrollMax));
+      
+      const progressBlocks = ['|', '|', '|', '|', '|', '|', '|', '|', '|', '|'].map((v, i) => {
+        return i < ratio * 10 ? '<b>|</b>' : v;
+      }).join(' ');
+
+      document.getElementById('scroll-bar').innerHTML = progressBlocks;
+      const fontShortName = fonts[currentFontIndex].replace('custom_', '').toUpperCase();
+      document.getElementById('stats-data').innerHTML = `<b>${metrics.l}L</b> ${metrics.w}W ${metrics.v}V ${metrics.c}C <b>${(ratio * 100).toFixed(1)}%</b> <i>${fontShortName}</i>`;
+    }
+
+    // --------------------------------------------------
+    // @ Line Marker Extraction Logic
+    // --------------------------------------------------
+    function extractMarkers(text) {
+      const list = [];
+      const lines = text.split('\n');
+
+      for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx].trim();
+        if (line.substring(0, 2) === '##') {
+          list.push({ id: list.length, text: line.replace('##', '').trim(), line: idx, type: 'subheader' });
+        } else if (line.substring(0, 1) === '#') {
+          list.push({ id: list.length, text: line.replace('#', '').trim(), line: idx, type: 'header' });
+        }
+      }
+      return list;
+    }
+
+    // --------------------------------------------------
+    // @ Document Loading & Rendering
+    // --------------------------------------------------
+    async function loadDocument(index) {
+      currentDocIndex = index;
+      const fileName = docs[index];
+      const view = document.getElementById('content-view');
+      view.innerHTML = '<em style="color: var(--f_med);">fetching document..</em>';
+      
+      try {
+        const response = await fetch(`./docs/${fileName}`);
+        if (!response.ok) throw new Error(`file "${fileName}" not found.`);
+        
+        const markdown = await response.text();
+        rawTextCache = markdown;
+        activePageMarkers = extractMarkers(markdown);
+        currentActiveMarkerIndex = -1;
+        
+        view.innerHTML = marked.parse(markdown);
+        renderSidebar();
+        
+        document.getElementById('content').scrollTop = 0;
+        updateStats();
+
+      } catch (err) {
+        view.innerHTML = `<div style="color: var(--b_high); border: 1px dashed var(--b_high); padding: 15px; text-transform: uppercase;"><strong>ERROR:</strong> ${err.message.toUpperCase()}</div>`;
+        rawTextCache = ''; activePageMarkers = []; renderSidebar();
+      }
+    }
+
+    function renderSidebar() {
+      const navi = document.getElementById('sidebar');
+      let html = '';
+
+      for (let pid = 0; pid < docs.length; pid++) {
+        const isPageActive = (pid === currentDocIndex);
+        const docName = docs[pid].replace('.md', '');
+        
+        html += `<ul class="${isPageActive ? 'active' : ''}">`;
+        html += `<li class="page" onclick="loadDocument(${pid})"><span>${docName}</span></li>`;
+        
+        if (isPageActive) {
+          activePageMarkers.forEach((marker) => {
+            const isMarkerActive = (marker.id === currentActiveMarkerIndex);
+            const cleanDisplayTitle = marker.text.replace(/[\*_`~]/g, '');
+            html += `
+              <li id="marker-item-${marker.id}" class="marker ${marker.type} ${isMarkerActive ? 'active' : ''}" onclick="jumpToMarker(${marker.id})">
+                <span>${cleanDisplayTitle}</span>
+              </li>
+            `;
+          });
+        }
+        html += `</ul>`;
+      }
+      navi.innerHTML = html;
+
+      // Spustí posun lišty po překreslení sidebar elementů
+      scrollSidebarToActive();
+    }
+
+    // NOVÁ FUNKCE: Automaticky vycentruje aktivní položku v liště (baru)
+    function scrollSidebarToActive() {
+      if (currentActiveMarkerIndex === -1) return;
+      const activeEl = document.getElementById(`marker-item-${currentActiveMarkerIndex}`);
+      const navi = document.getElementById('sidebar');
+      
+      if (activeEl && navi) {
+        // Vypočítá pozici tak, aby položka byla uprostřed výšky sidebaru
+        const activeRect = activeEl.getBoundingClientRect();
+        const naviRect = navi.getBoundingClientRect();
+        const relativeTop = activeEl.offsetTop - navi.offsetTop;
+        
+        navi.scrollTop = relativeTop - (navi.offsetHeight / 2) + (activeEl.offsetHeight / 2);
+      }
+    }
+
+    // --------------------------------------------------
+    // @ Scrolling & Marker Jumping Sync
+    // --------------------------------------------------
+    function jumpToMarker(markerId) {
+      const marker = activePageMarkers.find(m => m.id === markerId);
+      if (!marker) return;
+
+      const container = document.getElementById('content');
+      const targetCleaned = cleanText(marker.text);
+
+      const hElements = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+      const heading = hElements.find(el => cleanText(el.textContent) === targetCleaned);
+
+      if (heading) {
+        isAutoScrolling = true;
+        currentActiveMarkerIndex = markerId;
+        renderSidebar();
+
+        const containerRect = container.getBoundingClientRect();
+        const headingRect = heading.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + (headingRect.top - containerRect.top) - 15;
+
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+
+        setTimeout(() => {
+          isAutoScrolling = false;
+        }, 400);
+      }
+    }
+
+    function syncSidebarWithScroll() {
+      if (isAutoScrolling) {
+        updateStats();
+        return;
+      }
+
+      const container = document.getElementById('content');
+      const containerRect = container.getBoundingClientRect();
+      
+      const isAtBottom = (container.scrollTop + container.offsetHeight >= container.scrollHeight - 15);
+      
+      if (isAtBottom && activePageMarkers.length > 0) {
+        const lastIdx = activePageMarkers[activePageMarkers.length - 1].id;
+        if (currentActiveMarkerIndex !== lastIdx) {
+          currentActiveMarkerIndex = lastIdx;
+          renderSidebar();
+        }
+        updateStats();
+        return;
+      }
+
+      const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+      let currentHeading = null;
+
+      for (let i = 0; i < headings.length; i++) {
+        const rect = headings[i].getBoundingClientRect();
+        const relativeTop = rect.top - containerRect.top;
+
+        // Vylepšená citlivost posunu
+        if (relativeTop <= 50) {
+          currentHeading = headings[i];
+        } else {
+          break;
+        }
+      }
+
+      let nextActiveMarkerIdx = -1;
+      if (currentHeading) {
+        const titleCleaned = cleanText(currentHeading.textContent);
+        const found = activePageMarkers.find(m => cleanText(m.text) === titleCleaned);
+        if (found) {
+          nextActiveMarkerIdx = found.id;
+        }
+      }
+
+      if (nextActiveMarkerIdx !== currentActiveMarkerIndex) {
+        currentActiveMarkerIndex = nextActiveMarkerIdx;
+        renderSidebar(); // renderSidebar uvnitř sebe samo zavolá scrollSidebarToActive()
+      }
+
+      updateStats();
+    }
+
+    // --------------------------------------------------
+    // @ Document & Marker Cycle Actions
+    // --------------------------------------------------
+    function navigateDoc(forward = true) {
+      let nextIdx = currentDocIndex + (forward ? 1 : -1);
+      if (nextIdx >= docs.length) nextIdx = 0;
+      if (nextIdx < 0) nextIdx = docs.length - 1;
+      loadDocument(nextIdx);
+    }
+
+    function navigateMarker(forward = true) {
+      if (activePageMarkers.length === 0) return;
+      let nextIdx = currentActiveMarkerIndex + (forward ? 1 : -1);
+      if (nextIdx >= activePageMarkers.length) nextIdx = 0;
+      if (nextIdx < 0) nextIdx = activePageMarkers.length - 1;
+      jumpToMarker(nextIdx);
+    }
+
+    // --------------------------------------------------
+    // @ Keyboard Listener
+    // --------------------------------------------------
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === '\\') { e.preventDefault(); document.body.classList.toggle('mobile'); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '>' || e.key === '.')) { e.preventDefault(); cycleFont(true); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '<' || e.key === ',')) { e.preventDefault(); cycleFont(false); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); changeFontSize(1); }
+      if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); changeFontSize(-1); }
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); resetFontSize(); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '}' || e.key === ']')) { e.preventDefault(); navigateDoc(true); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '{' || e.key === '[')) { e.preventDefault(); navigateDoc(false); }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === ']') { e.preventDefault(); navigateMarker(true); }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === '[') { e.preventDefault(); navigateMarker(false); }
+    });
+
+    function startClock() {
+      const updateClock = () => {
+        const now = new Date();
+        document.getElementById('clock').innerHTML = `${now.getHours()}:${('0' + now.getMinutes()).slice(-2)}`;
+      };
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    window.onload = () => {
+      const cachedThemeIdx = localStorage.getItem('left_theme_idx');
+      if (cachedThemeIdx !== null) currentThemeIndex = parseInt(cachedThemeIdx, 10);
+      const cachedFontIdx = localStorage.getItem('left_font_idx');
+      if (cachedFontIdx !== null) currentFontIndex = parseInt(cachedFontIdx, 10);
+      const cachedFontSize = localStorage.getItem('left_font_size');
+      if (cachedFontSize !== null) currentFontSize = parseInt(cachedFontSize, 10);
+
+      loadTheme(currentThemeIndex);
+      updateFontVariables();
+      loadDocument(0);
+      
+      document.getElementById('content').addEventListener('scroll', syncSidebarWithScroll);
+      startClock();
+    };
+  </script>
+</body>
+</html>
